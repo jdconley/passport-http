@@ -259,6 +259,150 @@ vows.describe('BasicStrategy').addBatch({
     },
   },
   
+  'strategy handling a request with credentials lacking a password when password not required': {
+    topic: function() {
+      var strategy = new BasicStrategy({allowEmptyPassword:true}, function(userid, password, done) {
+        done(null, { username: userid, password: password });
+      });
+      return strategy;
+    },
+    
+    'after augmenting with actions': {
+      topic: function(strategy) {
+        var self = this;
+        var req = {};
+        strategy.success = function(user) {
+          self.callback(null, user);
+        }
+        strategy.fail = function(challenge) {
+          self.callback(new Error('should not be called'));
+        }
+        
+        req.headers = {};
+        req.headers.authorization = 'Basic Ym9iOg==';
+        process.nextTick(function () {
+          strategy.authenticate(req);
+        });
+      },
+      
+      'should not generate an error' : function(err, user) {
+        assert.isNull(err);
+      },
+      'should authenticate' : function(err, user) {
+        assert.equal(user.username, 'bob');
+        assert.equal(user.password, '');
+      },
+    },
+  },
+  
+  'strategy handling a request with credentials lacking a username when username not required': {
+    topic: function() {
+      var strategy = new BasicStrategy({allowEmptyUserId:true}, function(userid, password, done) {
+        done(null, { username: userid, password: password });
+      });
+      return strategy;
+    },
+    
+    'after augmenting with actions': {
+      topic: function(strategy) {
+        var self = this;
+        var req = {};
+        strategy.success = function(user) {
+          self.callback(null, user);
+        }
+        strategy.fail = function(challenge) {
+          self.callback(new Error('should not be called'));
+        }
+        
+        req.headers = {};
+        req.headers.authorization = 'Basic OnNlY3JldA==';
+        process.nextTick(function () {
+          strategy.authenticate(req);
+        });
+      },
+      
+      'should not generate an error' : function(err, user) {
+        assert.isNull(err);
+      },
+      'should authenticate' : function(err, user) {
+        assert.equal(user.username, '');
+        assert.equal(user.password, 'secret');
+      },
+    },
+  },
+  
+  'strategy handling a request with credentials lacking a username and password when both username and password are not required': {
+    topic: function() {
+      var strategy = new BasicStrategy({allowEmptyUserId:true, allowEmptyPassword:true}, function(userid, password, done) {
+        done(null, { username: userid, password: password });
+      });
+      return strategy;
+    },
+    
+    'after augmenting with actions': {
+      topic: function(strategy) {
+        var self = this;
+        var req = {};
+        strategy.success = function(user) {
+          self.callback(null, user);
+        }
+        strategy.fail = function(challenge) {
+          self.callback(new Error('should not be called'));
+        }
+        
+        req.headers = {};
+        req.headers.authorization = 'Basic Og==';
+        process.nextTick(function () {
+          strategy.authenticate(req);
+        });
+      },
+      
+      'should not generate an error' : function(err, user) {
+        assert.isNull(err);
+      },
+      'should authenticate' : function(err, user) {
+        assert.equal(user.username, '');
+        assert.equal(user.password, '');
+      },
+    },
+  },
+  
+  'strategy handling a password containing a colon character': {
+    topic: function() {
+      var strategy = new BasicStrategy({}, function(userid, password, done) {
+        done(null, { username: userid, password: password });
+      });
+      return strategy;
+    },
+    
+    'after augmenting with actions': {
+      topic: function(strategy) {
+        var self = this;
+        var req = {};
+        strategy.success = function(user) {
+          self.callback(null, user);
+        }
+        strategy.fail = function(challenge) {
+          self.callback(new Error('should not be called'));
+        }
+        
+        req.headers = {};
+        req.headers.authorization = 'Basic Ym9iOnNlY3JldDpzZWNyZXQ=';
+        process.nextTick(function () {
+          strategy.authenticate(req);
+        });
+      },
+      
+      'should not generate an error' : function(err, user) {
+        assert.isNull(err);
+      },
+      'should authenticate' : function(err, user) {
+        assert.equal(user.username, 'bob');
+        assert.equal(user.password, 'secret:secret');
+      },
+    },
+  },
+  
   'strategy handling a request with malformed authorization header': {
     topic: function() {
       var strategy = new BasicStrategy(function(userid, password, done) {
